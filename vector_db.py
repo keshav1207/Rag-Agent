@@ -16,22 +16,24 @@ class QdrantStorage:
         points = [PointStruct(id=ids[i],payload = payloads[i], vector=vectors[i]) for i in range(len(ids))]
         self.client.upsert(self.collection,points=points)
     
-    def search(self,query_vector, top_k: int =5):
-        results = self.client.search(
-            collection_name = self.collection,
-            query_vector =query_vector,
-            with_payload=True,
-            limit=top_k
+    def search(self, query_vector, top_k: int = 5):
+        results = self.client.query_points(
+            collection_name=self.collection,
+            query=query_vector,
+            limit=top_k,
+            with_payload=True
         )
+
         contexts = []
         sources = set()
 
-        for r in results:
-            payload = getattr(r,"payload", None) or {}
-            text = payload.get("text","")
-            source = payload.get("source","")
+        for point in results.points:
+            payload = point.payload or {}
+            text = payload.get("text", "")
+            source = payload.get("source", "")
+
             if text:
                 contexts.append(text)
                 sources.add(source)
-        
-        return {"contexts": contexts, "sources":list(sources)}
+
+        return {"contexts": contexts, "sources": list(sources)}
